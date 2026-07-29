@@ -1,0 +1,168 @@
+#=======================================================
+# STEP 7: Install Helm
+#=======================================================
+- name: Install Helm on master node
+  hosts: master
+  become: yes
+  tasks:
+    - name: Check if Helm is already installed
+      command: helm version
+      register: helm_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Helm installation script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+      when: helm_check.rc != 0
+
+    - name: Install Helm
+      command: /tmp/get_helm.sh
+      when: helm_check.rc != 0
+
+    - name: Verify Helm installation
+      command: helm version
+      register: helm_version
+
+    - name: Display Helm version
+      debug:
+        msg: "{{ helm_version.stdout }}"
+
+    - name: Add Helm stable repository
+      command: helm repo add stable https://charts.helm.sh/stable
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Update Helm repositories
+      command: helm repo update
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+
+- name: Prepare master node for Kubernetes modules
+  hosts: master
+  become: yes
+  tasks:
+    - name: Install Kubernetes Python dependencies via apt
+      apt:
+        name:
+          - python3-kubernetes
+          - python3-openshift
+        state: present
+        update_cache: yes
+
+
+
+#=======================================================
+# STEP 8: Install ArgoCD via Helm
+#=======================================================
+- name: Install ArgoCD on master node
+  hosts: master
+  become: yes
+  tasks:
+    - name: Add Argo Helm repository
+      kubernetes.core.helm_repository:
+        name: argo
+        repo_url: https://argoproj.github.io/argo-helm
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Update Helm repositories
+      command: helm repo update
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Create argocd namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: argocd
+        state: present
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Check if ArgoCD is already installed
+      kubernetes.core.helm_info:
+        name: argocd-demo
+        release_namespace: argocd
+      register: argocd_installed
+      failed_when: false
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Install ArgoCD using Helm
+      kubernetes.core.helm:
+        name: argocd-demo
+        chart_ref: argo/argo-cd
+        release_namespace: argocd
+        create_namespace: false
+      when: argocd_installed.status is not defined
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Wait for ArgoCD pods to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: argocd
+        label_selectors:
+          - app.kubernetes.io/name=argocd-server
+        wait: yes
+        wait_condition:
+          type: Ready
+          status: "True"
+        wait_timeout: 300
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Get ArgoCD pods status
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: argocd
+      register: argocd_pods
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Display ArgoCD pods status
+      debug:
+        msg: "{{ argocd_pods.resources | map(attribute='metadata.name') | list }}"
+
+    - name: Get ArgoCD admin password
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: argocd-initial-admin-secret
+        namespace: argocd
+      register: argocd_secret
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Decode and display ArgoCD admin password
+      debug:
+        msg: "ArgoCD admin password: {{ argocd_secret.resources[0].data.password | b64decode }}"
+      when: argocd_secret.resources | length > 0
+
+    - name: Inform user about ArgoCD access
+      debug:
+        msg: |
+          ArgoCD has been installed successfully!
+          
+          To access the UI, run this command on the master node:
+          kubectl port-forward svc/argocd-demo-server -n argocd 8080:443
+          
+          Then access: https://localhost:8080
+          Username: admin
+          Password: (see above)
+          
+          Or expose via NodePort/LoadBalancer for external access.
+
+    - name: Expose ArgoCD service via NodePort
+      shell: |
+        kubectl patch svc argocd-demo-server -n argocd -p '{"spec":{"type":"NodePort"}}'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+
+
+

@@ -1,0 +1,31 @@
+---
+- name: Prepare Ubuntu Desktop and Verify Nodes
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Download Helm Installation Script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+
+    - name: Execute Helm Install Script
+      command: /tmp/get_helm.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Verify Helm Version
+      command: helm version --short
+      register: helm_v
+      changed_when: false
+
+    - name: Print Helm Version
+      debug:
+        msg: "Helm is ready on Desktop: {{ helm_v.stdout }}"
+
+- name: Connectivity Check for VMware VMs
+  hosts: k8s_cluster
+  tasks:
+    - name: Ping all nodes in inventory
+      ping:

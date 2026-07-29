@@ -1,0 +1,419 @@
+---
+#=======================================================
+# STEP 1: Install Helm on Master Node
+#=======================================================
+- name: Install Helm
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Check if Helm is already installed
+      command: helm version
+      register: helm_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Helm installation script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+      when: helm_check.rc != 0
+
+    - name: Install Helm
+      command: /tmp/get_helm.sh
+      when: helm_check.rc != 0
+
+    - name: Verify Helm installation
+      command: helm version
+      register: helm_version
+
+    - name: Display Helm version
+      debug:
+        msg: "{{ helm_version.stdout_lines }}"
+
+    - name: Add Helm stable repository
+      command: helm repo add stable https://charts.helm.sh/stable
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Update Helm repositories
+      command: helm repo update
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+#=======================================================
+# STEP 2: Deploy Falco (Runtime Security)
+#=======================================================
+- name: Deploy Falco for Runtime Security
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Add Falco Helm repository
+      command: helm repo add falcosecurity https://falcosecurity.github.io/charts
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Update Helm repositories
+      command: helm repo update
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Create falco namespace
+      command: kubectl create namespace falco
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Check if Falco is already installed
+      shell: helm list -n falco | grep falco
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: falco_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create Falco custom values file (FIXED)
+      copy:
+        content: |
+          driver:
+            kind: modern_ebpf
+          
+          falco:
+            grpc:
+              enabled: true
+            grpc_output:
+              enabled: true
+            json_output: true
+            json_include_output_property: true
+            log_stderr: true
+            log_syslog: false
+            log_level: info
+            priority: debug
+            
+            # Use ONLY plural form - fixes the config error
+            rules_files:
+              - /etc/falco/falco_rules.yaml
+              - /etc/falco/falco_rules.local.yaml
+              - /etc/falco/k8s_audit_rules.yaml
+              - /etc/falco/rules.d
+          
+          # Disable UI and Redis to reduce resource usage
+          falcosidekick:
+            enabled: true
+            webui:
+              enabled: false
+            redis:
+              enabled: false
+          
+          # Set resource limits
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          tty: true
+        dest: /tmp/falco-values.yaml
+        mode: '0644'
+
+    - name: Install Falco using Helm
+      command: >
+        helm install falco falcosecurity/falco
+        --namespace falco
+        --values /tmp/falco-values.yaml
+        --set tty=true
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      when: falco_check.rc != 0
+      register: falco_install
+
+    - name: Wait for Falco pods to be ready
+      shell: kubectl get pods -n falco -l app.kubernetes.io/name=falco --no-headers | grep -v Running | wc -l
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: falco_pods
+      until: falco_pods.stdout == "0"
+      retries: 30
+      delay: 10
+      ignore_errors: yes
+
+    - name: Get Falco pods status
+      command: kubectl get pods -n falco
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: falco_status
+
+    - name: Display Falco status
+      debug:
+        msg: "{{ falco_status.stdout_lines }}"
+
+#=======================================================
+# STEP 3: Deploy Kyverno (Policy Engine)
+#=======================================================
+- name: Deploy Kyverno for Policy Enforcement
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Add Kyverno Helm repository
+      command: helm repo add kyverno https://kyverno.github.io/kyverno/
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Update Helm repositories
+      command: helm repo update
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Create kyverno namespace
+      command: kubectl create namespace kyverno
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Check if Kyverno is already installed
+      shell: helm list -n kyverno | grep kyverno
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: kyverno_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install Kyverno using Helm
+      command: >
+        helm install kyverno kyverno/kyverno
+        --namespace kyverno
+        --set replicaCount=1
+        --set admissionController.replicas=1
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      when: kyverno_check.rc != 0
+      register: kyverno_install
+
+    - name: Wait for Kyverno pods to be ready
+      shell: kubectl get pods -n kyverno --no-headers | grep -v Running | wc -l
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: kyverno_pods
+      until: kyverno_pods.stdout == "0"
+      retries: 30
+      delay: 10
+      ignore_errors: yes
+
+    - name: Get Kyverno pods status
+      command: kubectl get pods -n kyverno
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: kyverno_status
+
+    - name: Display Kyverno status
+      debug:
+        msg: "{{ kyverno_status.stdout_lines }}"
+
+    - name: Install Kyverno policies
+      command: helm install kyverno-policies kyverno/kyverno-policies --namespace kyverno
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+#=======================================================
+# STEP 4: Create Sample Kyverno Policies
+#=======================================================
+- name: Deploy Sample Kyverno Security Policies
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Create require-labels policy
+      copy:
+        content: |
+          apiVersion: kyverno.io/v1
+          kind: ClusterPolicy
+          metadata:
+            name: require-labels
+          spec:
+            validationFailureAction: audit
+            background: true
+            rules:
+            - name: check-for-labels
+              match:
+                any:
+                - resources:
+                    kinds:
+                    - Pod
+              validate:
+                message: "Label 'app' is required."
+                pattern:
+                  metadata:
+                    labels:
+                      app: "?*"
+        dest: /tmp/kyverno-require-labels.yaml
+        mode: '0644'
+
+    - name: Apply require-labels policy
+      command: kubectl apply -f /tmp/kyverno-require-labels.yaml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Create disallow-privileged-containers policy
+      copy:
+        content: |
+          apiVersion: kyverno.io/v1
+          kind: ClusterPolicy
+          metadata:
+            name: disallow-privileged-containers
+            annotations:
+              policies.kyverno.io/title: Disallow Privileged Containers
+              policies.kyverno.io/category: Pod Security Standards (Baseline)
+              policies.kyverno.io/severity: medium
+              policies.kyverno.io/description: >-
+                Privileged mode disables most security mechanisms and must not be allowed.
+          spec:
+            validationFailureAction: enforce
+            background: true
+            rules:
+            - name: privileged-containers
+              match:
+                any:
+                - resources:
+                    kinds:
+                    - Pod
+              validate:
+                message: >-
+                  Privileged mode is disallowed. The fields spec.containers[*].securityContext.privileged
+                  and spec.initContainers[*].securityContext.privileged must be unset or set to false.
+                pattern:
+                  spec:
+                    =(ephemeralContainers):
+                    - =(securityContext):
+                        =(privileged): false
+                    =(initContainers):
+                    - =(securityContext):
+                        =(privileged): false
+                    containers:
+                    - =(securityContext):
+                        =(privileged): false
+        dest: /tmp/kyverno-disallow-privileged.yaml
+        mode: '0644'
+
+    - name: Apply disallow-privileged-containers policy
+      command: kubectl apply -f /tmp/kyverno-disallow-privileged.yaml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: Create require-non-root-user policy
+      copy:
+        content: |
+          apiVersion: kyverno.io/v1
+          kind: ClusterPolicy
+          metadata:
+            name: require-run-as-non-root-user
+            annotations:
+              policies.kyverno.io/title: Require Run As Non-Root User
+              policies.kyverno.io/category: Pod Security Standards (Restricted)
+              policies.kyverno.io/severity: medium
+              policies.kyverno.io/description: >-
+                Containers must be required to run as non-root users.
+          spec:
+            validationFailureAction: enforce
+            background: true
+            rules:
+            - name: run-as-non-root-user
+              match:
+                any:
+                - resources:
+                    kinds:
+                    - Pod
+              validate:
+                message: >-
+                  Running as root is not allowed. The field spec.securityContext.runAsNonRoot must be set to true.
+                pattern:
+                  spec:
+                    securityContext:
+                      runAsNonRoot: true
+                    containers:
+                    - securityContext:
+                        runAsNonRoot: true
+        dest: /tmp/kyverno-require-non-root.yaml
+        mode: '0644'
+
+    - name: Apply require-non-root-user policy
+      command: kubectl apply -f /tmp/kyverno-require-non-root.yaml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+#=======================================================
+# STEP 5: Verification and Status
+#=======================================================
+- name: Verify Security Tools Deployment
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Get all Helm releases
+      command: helm list --all-namespaces
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: helm_releases
+
+    - name: Display Helm releases
+      debug:
+        msg: "{{ helm_releases.stdout_lines }}"
+
+    - name: Get all pods in security namespaces
+      command: kubectl get pods -n {{ item }}
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      loop:
+        - falco
+        - kyverno
+      register: security_pods
+      ignore_errors: yes
+
+    - name: Display security pods
+      debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ security_pods.results }}"
+      when: item.rc == 0
+
+    - name: Get Kyverno policies
+      command: kubectl get clusterpolicies
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: kyverno_policies
+      ignore_errors: yes
+
+    - name: Display Kyverno policies
+      debug:
+        msg: "{{ kyverno_policies.stdout_lines }}"
+      when: kyverno_policies.rc == 0
+
+    - name: Get Falco logs (last 20 lines)
+      shell: kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=20
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: falco_logs
+      ignore_errors: yes
+
+    - name: Display Falco logs
+      debug:
+        msg: "{{ falco_logs.stdout_lines }}"
+      when: falco_logs.rc == 0
+
+    - name: Final summary
+      debug:
+        msg:
+          - "=== Security Tools Deployment Complete ==="
+          - "✓ Helm installed and configured"
+          - "✓ Falco deployed for runtime security monitoring"
+          - "✓ Kyverno deployed for policy enforcement"
+          - "✓ Sample security policies applied"
+          - ""
+          - "Next steps:"
+          - "1. Test Falco alerts: kubectl run --rm -it test --image=alpine -- sh"
+          - "2. Test Kyverno policies: Try creating privileged pods"
+          - "3. View Falco logs: kubectl logs -n falco -l app.kubernetes.io/name=falco -f"
+          - "4. View Kyverno reports: kubectl get policyreport -A"
