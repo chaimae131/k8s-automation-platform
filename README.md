@@ -1,124 +1,134 @@
-# Sécurisation et automatisation d'une infrastructure Kubernetes
+# 🔐 Kubernetes Infrastructure Security & Automation Platform
 
-> Déploiement automatisé d'une infrastructure Kubernetes avec **Terraform** et **Ansible**, intégration d'un pipeline **GitOps** avec **ArgoCD**, et mise en place d'une plateforme complète d'observabilité et de sécurité basée sur **Prometheus**, **Grafana**, **Loki**, **Promtail** et **Falco**.
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326CE5?logo=kubernetes)
+![Terraform](https://img.shields.io/badge/Terraform-Infrastructure%20as%20Code-844FBA?logo=terraform)
+![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000?logo=ansible)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-FB4F14?logo=argo)
+![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?logo=prometheus)
+![Grafana](https://img.shields.io/badge/Grafana-Visualization-F46800?logo=grafana)
+![Loki](https://img.shields.io/badge/Loki-Logging-2C3E50)
+![Falco](https://img.shields.io/badge/Falco-Runtime%20Security-00AEEF)
+![DevSecOps](https://img.shields.io/badge/DevSecOps-Security%20Automation-success)
+
+> Automated deployment of a Kubernetes infrastructure using **Terraform** and **Ansible**, integration of a **GitOps** pipeline with **ArgoCD**, and implementation of a complete observability and security platform based on **Prometheus**, **Grafana**, **Loki**, **Promtail**, and **Falco**.
 
 ---
 
-# 📖 Présentation
+# 📖 Overview
 
-Ce projet a pour objectif d'automatiser le déploiement d'une infrastructure Kubernetes sécurisée en utilisant les pratiques DevOps et DevSecOps.
+This project aims to automate the deployment of a secure Kubernetes infrastructure by applying DevOps and DevSecOps best practices.
 
-L'infrastructure est entièrement déployée sur **VMware Workstation Pro** à partir d'une machine virtuelle **Ubuntu Server** servant de modèle (template). Les machines virtuelles du cluster sont provisionnées automatiquement avec **Terraform**, puis configurées avec **Ansible**.
+The infrastructure is fully deployed on **VMware Workstation Pro** from an **Ubuntu Server virtual machine** used as a template.
 
-Une fois le cluster Kubernetes opérationnel, plusieurs composants sont déployés afin d'assurer :
+The cluster virtual machines are automatically provisioned using **Terraform**, then configured using **Ansible**.
 
-- la gestion GitOps avec ArgoCD ;
-- la supervision des ressources avec Prometheus ;
-- la centralisation des logs avec Loki ;
-- la visualisation des métriques et des logs avec Grafana ;
-- la détection d'anomalies et des comportements suspects avec Falco.
+Once the Kubernetes cluster is operational, several components are deployed to provide:
+
+* GitOps management with ArgoCD;
+* Infrastructure monitoring with Prometheus;
+* Centralized logging with Loki;
+* Metrics and log visualization with Grafana;
+* Real-time anomaly and suspicious behavior detection with Falco.
 
 ---
 
 # 🏗 Architecture
 
-
-![Architecture du projet](docs/architecture.png)
-
+![Project Architecture](docs/architecture.png)
 
 ```text
 docs/architecture.png
 ```
 
-L'architecture est composée des éléments suivants :
+The architecture is composed of the following components:
 
-- **Ubuntu Desktop (Host)**
-- **VMware Workstation Pro**
-- **1 VM Ubuntu Server Template**
-- **3 machines virtuelles Kubernetes**
-  - 1 Master
-  - 2 Workers
-- **Terraform**
-- **Ansible**
-- **Kubernetes**
-- **Helm**
-- **ArgoCD**
-- **Prometheus**
-- **Grafana**
-- **Loki**
-- **Promtail**
-- **Node Exporter**
-- **Falco**
+* **Ubuntu Desktop (Host)**
+* **VMware Workstation Pro**
+* **1 Ubuntu Server Template VM**
+* **3 Kubernetes Virtual Machines**
 
----
-
-# 🎯 Objectifs
-
-Ce projet répond aux objectifs suivants :
-
-- automatiser la création d'une infrastructure Kubernetes ;
-- appliquer des règles de hardening avant toute installation ;
-- déployer automatiquement le cluster Kubernetes ;
-- mettre en œuvre une approche GitOps ;
-- superviser l'ensemble de l'infrastructure ;
-- centraliser les logs des nœuds et des conteneurs ;
-- détecter les anomalies de sécurité en temps réel.
+  * 1 Master
+  * 2 Workers
+* **Terraform**
+* **Ansible**
+* **Kubernetes**
+* **Helm**
+* **ArgoCD**
+* **Prometheus**
+* **Grafana**
+* **Loki**
+* **Promtail**
+* **Node Exporter**
+* **Falco**
 
 ---
 
-# 🛠 Technologies utilisées
+# 🎯 Objectives
 
-| Outil                  | Rôle                                    |
-| ---------------------- | --------------------------------------- |
-| Terraform              | Provisionnement des machines virtuelles |
-| VMware Workstation Pro | Virtualisation                          |
-| Ubuntu Server          | Système d'exploitation                  |
-| Ansible                | Configuration automatique               |
-| Kubernetes             | Orchestration                           |
-| Helm                   | Gestion des applications Kubernetes     |
-| ArgoCD                 | GitOps                                  |
-| Prometheus             | Collecte des métriques                  |
-| Grafana                | Visualisation                           |
-| Loki                   | Centralisation des logs                 |
-| Promtail               | Collecte des logs                       |
-| Node Exporter          | Métriques système                       |
-| Falco                  | Détection d'intrusions                  |
+This project addresses the following objectives:
 
+* Automate Kubernetes infrastructure creation;
+* Apply security hardening before installation;
+* Automatically deploy the Kubernetes cluster;
+* Implement a GitOps approach;
+* Monitor the entire infrastructure;
+* Centralize node and container logs;
+* Detect security anomalies in real time.
 
 ---
 
-# 🚀 Déroulement du projet
+# 🛠 Technologies Used
 
-## 1. Création de la machine virtuelle Template
-
-Une machine virtuelle Ubuntu Server est créée manuellement sous VMware Workstation Pro.
-
-Cette VM est préparée avec :
-
-- OpenSSH Server
-- configuration réseau
-- utilisateur administrateur
-- VMware Tools
-- clés SSH
-- mises à jour système
-
-Cette machine devient ensuite le **template** utilisé par Terraform.
+| Tool                   | Role                              |
+| ---------------------- | --------------------------------- |
+| Terraform              | Virtual machine provisioning      |
+| VMware Workstation Pro | Virtualization                    |
+| Ubuntu Server          | Operating system                  |
+| Ansible                | Automated configuration           |
+| Kubernetes             | Container orchestration           |
+| Helm                   | Kubernetes application management |
+| ArgoCD                 | GitOps deployment                 |
+| Prometheus             | Metrics collection                |
+| Grafana                | Visualization                     |
+| Loki                   | Log aggregation                   |
+| Promtail               | Log collection                    |
+| Node Exporter          | System metrics                    |
+| Falco                  | Intrusion and anomaly detection   |
 
 ---
 
-## 2. Provisionnement automatique avec Terraform
+# 🚀 Project Workflow
 
-Terraform est utilisé pour automatiser le déploiement du cluster.
+## 1. Creating the Virtual Machine Template
 
-Il réalise automatiquement :
+An Ubuntu Server virtual machine is manually created on VMware Workstation Pro.
 
-- le clonage du template Ubuntu Server ;
-- la création des trois machines virtuelles ;
-- l'attribution des ressources (CPU, RAM, disque) ;
-- la configuration réseau ;
-- la génération automatique du fichier **inventory** utilisé par Ansible.
+This VM is prepared with:
 
-Le cluster obtenu est composé de :
+* OpenSSH Server;
+* Network configuration;
+* Administrator user;
+* VMware Tools;
+* SSH keys;
+* System updates.
+
+This machine becomes the **template** used by Terraform.
+
+---
+
+## 2. Automated Provisioning with Terraform
+
+Terraform is used to automate cluster deployment.
+
+It automatically performs:
+
+* Ubuntu Server template cloning;
+* Creation of the three virtual machines;
+* Resource allocation (CPU, RAM, disk);
+* Network configuration;
+* Automatic generation of the **inventory** file used by Ansible.
+
+The resulting cluster contains:
 
 ```text
 Master
@@ -128,122 +138,124 @@ Worker-2
 
 ---
 
-## 3. Configuration automatique avec Ansible
+## 3. Automated Configuration with Ansible
 
-Une fois les machines créées, Ansible configure entièrement l'infrastructure.
+Once the machines are created, Ansible fully configures the infrastructure.
 
-Les playbooks sont exécutés dans l'ordre suivant.
-
-### 🔒 Hardening
-
-Avant l'installation de Kubernetes, plusieurs mesures de sécurité sont appliquées :
-
-- désactivation du login root ;
-- authentification SSH par clés ;
-- configuration du pare-feu ;
-- mises à jour système ;
-- configuration sysctl ;
-- sécurisation SSH ;
-- suppression des services inutiles.
+The playbooks are executed in the following order.
 
 ---
 
-### ☸ Installation de Kubernetes
+## 🔒 Security Hardening
 
-Installation automatique de :
+Before installing Kubernetes, several security measures are applied:
 
-- containerd
-- kubeadm
-- kubelet
-- kubectl
-
-Puis :
-
-- initialisation du Master ;
-- récupération du token ;
-- ajout automatique des Workers.
-
-Le cluster Kubernetes est alors entièrement opérationnel.
+* Root login disabled;
+* SSH key-based authentication;
+* Firewall configuration;
+* System updates;
+* Sysctl configuration;
+* SSH hardening;
+* Removal of unnecessary services.
 
 ---
 
-### ⚓ Installation de Helm
+## ☸ Kubernetes Installation
 
-Helm est installé afin de simplifier le déploiement des applications Kubernetes.
+Automatic installation of:
 
----
+* containerd;
+* kubeadm;
+* kubelet;
+* kubectl.
 
-### 🔄 Déploiement GitOps avec ArgoCD
+Then:
 
-ArgoCD est installé sur le cluster.
+* Master initialization;
+* Token retrieval;
+* Automatic Worker nodes joining.
 
-Il surveille un dépôt Git contenant les manifestes Kubernetes.
-
-Chaque modification du dépôt est automatiquement synchronisée avec le cluster.
-
----
-
-### 📊 Monitoring avec Prometheus
-
-Prometheus collecte les métriques suivantes :
-
-- CPU
-- mémoire
-- disque
-- réseau
-- métriques Kubernetes
+The Kubernetes cluster becomes fully operational.
 
 ---
 
-### 📈 Grafana
+## ⚓ Helm Installation
 
-Grafana permet de visualiser :
-
-- les métriques Prometheus ;
-- les logs Loki.
-
-Des tableaux de bord facilitent la supervision de l'ensemble du cluster.
+Helm is installed to simplify Kubernetes application deployment.
 
 ---
 
-### 📝 Centralisation des logs
+## 🔄 GitOps Deployment with ArgoCD
 
-#### Loki
+ArgoCD is installed on the cluster.
 
-Loki stocke les journaux des applications et des nœuds.
+It monitors a Git repository containing Kubernetes manifests.
 
-#### Promtail
-
-Promtail est déployé sous forme de **DaemonSet**.
-
-Il collecte automatiquement :
-
-- les logs système ;
-- les logs Kubernetes ;
-- les logs des conteneurs.
+Every repository change is automatically synchronized with the cluster.
 
 ---
 
-### 📡 Node Exporter
+## 📊 Monitoring with Prometheus
 
-Node Exporter est également déployé en **DaemonSet** afin d'exposer les métriques système de chaque nœud.
+Prometheus collects the following metrics:
 
----
-
-### 🛡 Sécurité Runtime avec Falco
-
-Falco surveille en permanence l'activité des conteneurs.
-
-Il détecte notamment :
-
-- les shells interactifs ;
-- les accès suspects aux fichiers sensibles ;
-- les privilèges élevés ;
-- les comportements anormaux.
+* CPU usage;
+* Memory usage;
+* Disk usage;
+* Network metrics;
+* Kubernetes metrics.
 
 ---
 
-# 🔄 Workflow GitOps
+## 📈 Grafana
+
+Grafana provides visualization for:
+
+* Prometheus metrics;
+* Loki logs.
+
+Dashboards simplify monitoring of the entire Kubernetes cluster.
+
+---
+
+## 📝 Centralized Logging
+
+### Loki
+
+Loki stores application and node logs.
+
+### Promtail
+
+Promtail is deployed as a **DaemonSet**.
+
+It automatically collects:
+
+* System logs;
+* Kubernetes logs;
+* Container logs.
+
+---
+
+## 📡 Node Exporter
+
+Node Exporter is deployed as a **DaemonSet** to expose system metrics from every node.
+
+---
+
+## 🛡 Runtime Security with Falco
+
+Falco continuously monitors container activity.
+
+It detects:
+
+* Interactive shells;
+* Suspicious access to sensitive files;
+* Privilege escalation;
+* Abnormal behaviors.
+
+---
+
+# 🔄 GitOps Workflow
 
 ```text
 GitHub
@@ -252,22 +264,21 @@ GitHub
 ArgoCD
    │
    ▼
-Synchronisation automatique
+Automatic Synchronization
    │
    ▼
-Cluster Kubernetes
+Kubernetes Cluster
 ```
 
-Le dépôt Git constitue la source unique de vérité.
+The Git repository acts as the single source of truth.
 
-Toute modification des manifests Kubernetes est automatiquement appliquée au cluster.
+Any modification to Kubernetes manifests is automatically applied to the cluster.
 
 ---
 
-# 📦 Déploiement
+# 📦 Deployment
 
-
-## Provisionnement des machines virtuelles
+## Virtual Machine Provisioning
 
 ```bash
 cd terraform
@@ -279,7 +290,7 @@ terraform plan
 terraform apply
 ```
 
-## Déploiement du cluster
+## Cluster Deployment
 
 ```bash
 cd ../ansible
@@ -301,50 +312,46 @@ ansible-playbook playbooks/falco.yml
 
 ---
 
-# 📊 Résultat final
+# 📊 Final Result
 
-À la fin du déploiement, l'infrastructure comprend :
+At the end of deployment, the infrastructure includes:
 
-- ✅ Un cluster Kubernetes composé d'un Master et de deux Workers.
-- ✅ Un provisionnement automatisé avec Terraform.
-- ✅ Une configuration complète avec Ansible.
-- ✅ Un cluster sécurisé grâce au hardening.
-- ✅ Une plateforme GitOps avec ArgoCD.
-- ✅ Une supervision centralisée avec Prometheus et Grafana.
-- ✅ Une collecte centralisée des logs avec Loki et Promtail.
-- ✅ Une surveillance système avec Node Exporter.
-- ✅ Une détection d'anomalies en temps réel avec Falco.
-
----
-
-# 🔮 Améliorations possibles
-
-- Haute disponibilité du Control Plane Kubernetes
-- Intégration d'Alertmanager
-- Déploiement sur VMware vSphere
-- Déploiement sur AWS, Azure ou GCP
-- Intégration de HashiCorp Vault
-- Analyse des images avec Trivy
-- Politiques de sécurité avec Kyverno ou OPA Gatekeeper
-- Pipeline CI/CD avec GitHub Actions ou GitLab CI
+* ✅ A Kubernetes cluster composed of one Master and two Workers.
+* ✅ Automated provisioning using Terraform.
+* ✅ Complete configuration using Ansible.
+* ✅ A secured cluster through hardening practices.
+* ✅ A GitOps platform using ArgoCD.
+* ✅ Centralized monitoring with Prometheus and Grafana.
+* ✅ Centralized logging using Loki and Promtail.
+* ✅ System monitoring using Node Exporter.
+* ✅ Real-time anomaly detection using Falco.
 
 ---
 
-## 👥 Auteurs
+# 🔮 Possible Improvements
 
-Projet réalisé en équipe dans le cadre d'un projet de fin de semestre portant sur l'automatisation, la sécurisation et l'observabilité d'une infrastructure Kubernetes.
+* Kubernetes Control Plane High Availability;
+* Integration of Alertmanager;
+* Deployment on VMware vSphere;
+* Deployment on AWS, Azure, or GCP;
+* Integration of HashiCorp Vault;
+* Container image scanning with Trivy;
+* Security policies using Kyverno or OPA Gatekeeper;
+* CI/CD pipeline using GitHub Actions or GitLab CI.
 
-### Membres de l'équipe
+---
 
-- Chaima BISSI
-- Hasnae AMANSAG
-- Bassma HMAMMOUCH
+# 👥 Authors
 
-### Ma contribution
+This project was developed as a team project as part of a semester-end project focused on Kubernetes infrastructure automation, security, and observability.
 
-J'ai principalement contribué aux aspects suivants :
+## Team Members
 
-- Déploiement et configuration du cluster Kubernetes ;
-- Installation et configuration de Helm ;
-- Déploiement et configuration d'ArgoCD pour la mise en place du workflow GitOps ;
-- L'intégration de la stack Prometheus, Grafana et Loki ;
+## My Contribution
+
+I mainly contributed to the following aspects:
+
+* Kubernetes cluster deployment and configuration;
+* Helm installation and configuration;
+* Deployment and configuration of ArgoCD to implement the GitOps workflow;
+* Integration of the Prometheus, Grafana, and Loki monitoring stack.
