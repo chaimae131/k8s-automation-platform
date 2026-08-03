@@ -346,6 +346,9 @@ At the end of deployment, the infrastructure includes:
 This project was developed as a team project as part of a semester-end project focused on Kubernetes infrastructure automation, security, and observability.
 
 ## Team Members
+* Chaima BISSI
+* Hasnae AMANSAG
+* Bassma HMAMMOUCH
 
 ## My Contribution
 
